@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 소통 게시판</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+
+        .content {
+            margin-top: 72px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 28px 24px;
+        }
+
+        /* 목록 화면 */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+        .top-bar h2 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            color: #666;
+            transition: all 0.15s;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: #1a1a2e;
+            color: white;
+            border-color: #1a1a2e;
+        }
+
+        .post-list { display: flex; flex-direction: column; gap: 0; }
+        .post-item {
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .post-item:first-child { border-radius: 10px 10px 0 0; }
+        .post-item:last-child { border-radius: 0 0 10px 10px; border-bottom: none; }
+        .post-item:only-child { border-radius: 10px; border-bottom: none; }
+        .post-item:hover { background: #f8f9fa; }
+
+        .post-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .cat-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        .post-title { font-size: 15px; font-weight: 600; color: #1a1a2e; flex: 1; }
+        .post-meta { font-size: 12px; color: #aaa; display: flex; gap: 12px; }
+        .post-preview { font-size: 13px; color: #666; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .empty-msg { text-align: center; padding: 60px 20px; color: #aaa; font-size: 14px; background: white; border-radius: 10px; }
+
+        /* 글쓰기 버튼 */
+        .btn-write {
+            padding: 10px 20px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .btn-write:hover { background: #2d2d4e; }
+
+        /* 글쓰기 폼 */
+        .form-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+            background: white;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { border-color: #1a1a2e; }
+        .form-group textarea { resize: vertical; min-height: 180px; line-height: 1.6; }
+
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-submit {
+            padding: 11px 28px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .btn-submit:hover { background: #2d2d4e; }
+        .btn-cancel {
+            padding: 11px 20px;
+            background: white;
+            color: #555;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .btn-cancel:hover { background: #f5f5f5; }
+
+        /* 상세 화면 */
+        .detail-header { margin-bottom: 20px; }
+        .detail-cat { margin-bottom: 10px; }
+        .detail-title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; line-height: 1.4; }
+        .detail-meta { font-size: 13px; color: #aaa; display: flex; gap: 14px; flex-wrap: wrap; }
+        .detail-divider { border: none; border-top: 1px solid #e8e8e8; margin: 20px 0; }
+        .detail-body { font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; background: white; padding: 24px; border-radius: 10px; }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .btn-back:hover { background: #f5f5f5; }
+
+        /* 댓글 */
+        .comments-section { margin-top: 28px; }
+        .comments-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; }
+        .comment-form { background: white; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .comment-form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .comment-form-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; }
+        .comment-form-row input:focus { border-color: #1a1a2e; }
+        .comment-textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; resize: none; height: 70px; }
+        .comment-textarea:focus { border-color: #1a1a2e; }
+        .btn-comment {
+            padding: 8px 18px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .comment-item { background: white; border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
+        .comment-author { font-size: 13px; font-weight: 600; color: #1a1a2e; }
+        .comment-date { font-size: 11px; color: #aaa; margin-left: 8px; }
+        .comment-body { font-size: 13px; color: #444; margin-top: 6px; line-height: 1.6; white-space: pre-wrap; }
+
+        .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+        @media (max-width: 768px) {
+            .content { padding: 16px 12px; }
+            .top-bar h2 { font-size: 17px; }
+            .post-item { padding: 12px 14px; }
+            .post-title { font-size: 14px; }
+            .detail-title { font-size: 18px; }
+            .detail-body { padding: 16px; font-size: 14px; }
+            .comment-form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <h1>소통 게시판</h1>
+        <span>업체 정보 공유</span>
+    </div>
+    <nav class="header-nav">
+        <a href="index.html" class="nav-link">자재 지도</a>
+        <a href="calculator.html" class="nav-link">자재 계산기</a>
+        <a href="schedule.html" class="nav-link">공정표</a>
+        <a href="prices.html" class="nav-link">단가표</a>
+        <a href="board.html" class="nav-link active">게시판</a>
+        <span class="user-email" id="userEmail" style="display:none"></span>
+        <button class="auth-btn" id="authBtn" onclick="openModal()">로그인</button>
+    </nav>
+</header>
+
+<div class="content">
+
+    <!-- 목록 -->
+    <div class="view active" id="view-list">
+        <div class="top-bar">
+            <h2>게시판</h2>
+            <button class="btn-write" onclick="showWrite()">글쓰기</button>
+        </div>
+        <div class="filter-bar" id="filterBar">
+            <button class="filter-btn active" onclick="filterPosts('전체')">전체</button>
+            <button class="filter-btn" onclick="filterPosts('자재 정보')">자재 정보</button>
+            <button class="filter-btn" onclick="filterPosts('업체 추천')">업체 추천</button>
+            <button class="filter-btn" onclick="filterPosts('시공 후기')">시공 후기</button>
+            <button class="filter-btn" onclick="filterPosts('질문/답변')">질문/답변</button>
+            <button class="filter-btn" onclick="filterPosts('공지')">공지</button>
+        </div>
+        <div class="post-list" id="postList">
+            <div class="loading">불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 글쓰기 -->
+    <div class="view" id="view-write">
+        <div class="form-title">글쓰기</div>
+        <div class="form-group">
+            <label>카테고리</label>
+            <select id="write-cat">
+                <option value="자재 정보">자재 정보</option>
+                <option value="업체 추천">업체 추천</option>
+                <option value="시공 후기">시공 후기</option>
+                <option value="질문/답변">질문/답변</option>
+                <option value="공지">공지</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>작성자</label>
+            <input type="text" id="write-author" placeholder="닉네임">
+        </div>
+        <div class="form-group">
+            <label>제목</label>
+            <input type="text" id="write-title" placeholder="제목을 입력하세요">
+        </div>
+        <div class="form-group">
+            <label>내용</label>
+            <textarea id="write-content" placeholder="내용을 입력하세요"></textarea>
+        </div>
+        <div class="form-actions">
+            <button class="btn-cancel" onclick="showList()">취소</button>
+            <button class="btn-submit" onclick="submitPost()">등록</button>
+        </div>
+    </div>
+
+    <!-- 상세 -->
+    <div class="view" id="view-detail">
+        <button class="btn-back" onclick="showList()">← 목록으로</button>
+        <div id="detailContent"></div>
+        <div class="comments-section">
+            <div class="comments-title" id="commentCount">댓글</div>
+            <div class="comment-form">
+                <div class="comment-form-row">
+                    <input type="text" id="comment-author" placeholder="닉네임">
+                </div>
+                <textarea class="comment-textarea" id="comment-body" placeholder="댓글을 입력하세요"></textarea>
+                <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                    <button class="btn-comment" onclick="submitComment()">댓글 등록</button>
+                </div>
+            </div>
+            <div id="commentList"></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+
+const CAT_COLOR = {
+    '자재 정보': '#4682B4',
+    '업체 추천': '#2E8B57',
+    '시공 후기': '#8B4513',
+    '질문/답변': '#708090',
+    '공지':      '#DC143C',
+};
+
+var allPosts = [];
+var currentFilter = '전체';
+var currentPostId = null;
+var currentUser = null;
+
+window.onAuthChange = function(user) {
+    currentUser = user;
+    var name = user ? user.email.split('@')[0] : '';
+    var wa = document.getElementById('write-author');
+    var ca = document.getElementById('comment-author');
+    if (wa) { wa.value = name; wa.readOnly = !!user; wa.style.background = user ? '#f5f5f5' : ''; wa.style.color = user ? '#888' : ''; }
+    if (ca) { ca.value = name; ca.readOnly = !!user; ca.style.background = user ? '#f5f5f5' : ''; ca.style.color = user ? '#888' : ''; }
+};
+
+// ── 날짜 포맷 ─────────────────────────────────────────────────
+function fmtDate(str) {
+    var d = new Date(str);
+    return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) +
+           ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function pad(n) { return n < 10 ? '0'+n : n; }
+
+// ── 목록 로드 ─────────────────────────────────────────────────
+async function loadPosts() {
+    var res = await db.from('posts').select('*').order('created_at', { ascending: false });
+    if (res.error) {
+        document.getElementById('postList').innerHTML = '<div class="empty-msg">게시글을 불러오지 못했습니다.<br>' + res.error.message + '</div>';
+        return;
+    }
+    allPosts = res.data || [];
+    renderList();
+}
+
+function renderList() {
+    var filtered = currentFilter === '전체' ? allPosts : allPosts.filter(function(p) { return p.category === currentFilter; });
+    var el = document.getElementById('postList');
+    if (filtered.length === 0) {
+        el.innerHTML = '<div class="empty-msg">게시글이 없습니다.<br>첫 글을 남겨보세요!</div>';
+        return;
+    }
+    el.innerHTML = filtered.map(function(p) {
+        var color = CAT_COLOR[p.category] || '#888';
+        return '<div class="post-item" onclick="openPost(' + p.id + ')">' +
+            '<div class="post-item-top">' +
+                '<span class="cat-badge" style="background:' + color + '">' + p.category + '</span>' +
+                '<span class="post-title">' + escHtml(p.title) + '</span>' +
+            '</div>' +
+            '<div class="post-preview">' + escHtml(p.content).substring(0, 80) + (p.content.length > 80 ? '...' : '') + '</div>' +
+            '<div class="post-meta" style="margin-top:6px;">' +
+                '<span>' + escHtml(p.author) + '</span>' +
+                '<span>' + fmtDate(p.created_at) + '</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function filterPosts(cat) {
+    currentFilter = cat;
+    document.querySelectorAll('.filter-btn').forEach(function(b) {
+        b.classList.toggle('active', b.textContent === cat);
+    });
+    renderList();
+}
+
+// ── 상세 ──────────────────────────────────────────────────────
+async function openPost(id) {
+    currentPostId = id;
+    showView('view-detail');
+    var post = allPosts.find(function(p) { return p.id === id; });
+    if (!post) return;
+
+    var color = CAT_COLOR[post.category] || '#888';
+    document.getElementById('detailContent').innerHTML =
+        '<div class="detail-header">' +
+            '<div class="detail-cat"><span class="cat-badge" style="background:' + color + '">' + post.category + '</span></div>' +
+            '<div class="detail-title">' + escHtml(post.title) + '</div>' +
+            '<div class="detail-meta">' +
+                '<span>' + escHtml(post.author) + '</span>' +
+                '<span>' + fmtDate(post.created_at) + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<hr class="detail-divider">' +
+        '<div class="detail-body">' + escHtml(post.content) + '</div>';
+
+    loadComments(id);
+}
+
+// ── 댓글 ──────────────────────────────────────────────────────
+async function loadComments(postId) {
+    var res = await db.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+    if (res.error) {
+        document.getElementById('commentList').innerHTML = '<div style="text-align:center;padding:20px;color:#DC143C;font-size:13px;">댓글을 불러오지 못했습니다.</div>';
+        return;
+    }
+    var list = res.data || [];
+    document.getElementById('commentCount').textContent = '댓글 ' + list.length + '개';
+    document.getElementById('commentList').innerHTML = list.length === 0
+        ? '<div style="text-align:center;padding:20px;color:#aaa;font-size:13px;">첫 댓글을 남겨보세요!</div>'
+        : list.map(function(c) {
+            return '<div class="comment-item">' +
+                '<span class="comment-author">' + escHtml(c.author) + '</span>' +
+                '<span class="comment-date">' + fmtDate(c.created_at) + '</span>' +
+                '<div class="comment-body">' + escHtml(c.content) + '</div>' +
+            '</div>';
+        }).join('');
+}
+
+async function submitComment() {
+    var author  = currentUser ? currentUser.email.split('@')[0] : document.getElementById('comment-author').value.trim();
+    var content = document.getElementById('comment-body').value.trim();
+    if (!author || !content) { alert('닉네임과 댓글 내용을 입력해주세요.'); return; }
+
+    var res = await db.from('comments').insert([{ post_id: currentPostId, author: author, content: content }]);
+    if (res.error) { alert('댓글 등록 실패: ' + res.error.message); return; }
+
+    document.getElementById('comment-body').value = '';
+    if (!currentUser) document.getElementById('comment-author').value = '';
+    loadComments(currentPostId);
+}
+
+// ── 글쓰기 ────────────────────────────────────────────────────
+async function submitPost() {
+    var cat     = document.getElementById('write-cat').value;
+    var author  = currentUser ? currentUser.email.split('@')[0] : document.getElementById('write-author').value.trim();
+    var title   = document.getElementById('write-title').value.trim();
+    var content = document.getElementById('write-content').value.trim();
+
+    if (!author || !title || !content) { alert('작성자, 제목, 내용을 모두 입력해주세요.'); return; }
+
+    var res = await db.from('posts').insert([{ category: cat, author: author, title: title, content: content }]);
+    if (res.error) { alert('등록 실패: ' + res.error.message); return; }
+
+    if (!currentUser) document.getElementById('write-author').value = '';
+    document.getElementById('write-title').value   = '';
+    document.getElementById('write-content').value = '';
+    await loadPosts();
+    showList();
+}
+
+// ── 화면 전환 ─────────────────────────────────────────────────
+function showView(id) {
+    document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+}
+function showList()  { showView('view-list'); }
+function showWrite() {
+    if (!currentUser) { openModal(); return; }
+    var wa = document.getElementById('write-author');
+    var name = currentUser.email.split('@')[0];
+    wa.value = name; wa.readOnly = true; wa.style.background = '#f5f5f5'; wa.style.color = '#888';
+    showView('view-write');
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadPosts();
+</script>
+
+</body>
+</html>

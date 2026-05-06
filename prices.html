@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>자재 단가표</title>
+    <meta name="auth-title" content="단가표 전체 보기">
+    <meta name="auth-desc" content="회원가입 또는 로그인 후 전체 단가를 확인하세요.">
+    <link rel="stylesheet" href="shared.css">
+    <style>
+
+        .nav-tabs {
+            position: fixed;
+            top: 56px; left: 0; right: 0;
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            z-index: 999;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-family: inherit;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #888;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s;
+        }
+        .nav-tab:hover { color: #333; }
+        .nav-tab.active { color: #1a1a2e; font-weight: 700; border-bottom-color: #1a1a2e; }
+
+        .content {
+            margin-top: 104px;
+            max-width: 860px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 28px 24px;
+        }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .panel-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .panel-desc  { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.6; }
+
+        .notice-box {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #856404;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* 테이블 */
+        .table-wrap { position: relative; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            font-size: 13px;
+        }
+        thead { background: #1a1a2e; color: white; }
+        thead th { padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+        tbody tr { border-bottom: 1px solid #f0f0f0; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #f8f9fa; }
+        tbody td { padding: 11px 14px; vertical-align: middle; }
+
+        .price { font-weight: 700; color: #1a1a2e; }
+        .note  { font-size: 11px; color: #999; }
+
+        /* 잠금 행 */
+        tr.locked { filter: blur(5px); user-select: none; pointer-events: none; }
+
+        /* 잠금 오버레이 */
+        .lock-overlay {
+            display: none;
+            position: absolute;
+            left: 0; right: 0;
+            bottom: 0;
+            height: 68%;
+            background: linear-gradient(to bottom, rgba(245,245,245,0) 0%, rgba(245,245,245,0.55) 20%, rgba(245,245,245,0.92) 50%);
+            z-index: 10;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 32px;
+        }
+        .lock-overlay.show { display: flex; }
+
+        .lock-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+            padding: 24px 32px;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+        }
+        .lock-card .lock-icon { font-size: 28px; margin-bottom: 10px; }
+        .lock-card h3 { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+        .lock-card p  { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.5; }
+        .lock-card button {
+            width: 100%;
+            padding: 11px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .lock-card button:hover { background: #2d2d4e; }
+
+        @media (max-width: 768px) {
+            .nav-tab { padding: 10px 13px; font-size: 12px; }
+            .content { padding: 16px 12px; }
+            .panel-title { font-size: 17px; }
+            thead th, tbody td { padding: 9px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <h1>자재 단가표</h1>
+        <span>2025년 기준 시세</span>
+    </div>
+    <nav class="header-nav">
+        <a href="index.html" class="nav-link">자재 지도</a>
+        <a href="calculator.html" class="nav-link">자재 계산기</a>
+        <a href="schedule.html" class="nav-link">공정표</a>
+        <a href="prices.html" class="nav-link active">단가표</a>
+        <a href="board.html" class="nav-link">게시판</a>
+        <span class="user-email" id="userEmail" style="display:none"></span>
+        <button class="auth-btn" id="authBtn" onclick="openModal()">로그인</button>
+    </nav>
+</header>
+
+<nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab(0)">목자재</button>
+    <button class="nav-tab" onclick="showTab(1)">석고보드/단열재</button>
+    <button class="nav-tab" onclick="showTab(2)">타일</button>
+    <button class="nav-tab" onclick="showTab(3)">철물/건재</button>
+    <button class="nav-tab" onclick="showTab(4)">도장/도배</button>
+    <button class="nav-tab" onclick="showTab(5)">전기/조명</button>
+    <button class="nav-tab" onclick="showTab(6)">시공비</button>
+</nav>
+
+<div class="content">
+
+    <div class="notice-box">
+        ※ 아래 단가는 서울·수도권 기준 평균 시세이며, 업체·수량·시기에 따라 ±20% 이상 차이가 날 수 있습니다. 참고용으로만 활용하세요.
+    </div>
+
+    <!-- 목자재 -->
+    <div class="panel active" id="panel-0">
+        <div class="panel-title">목자재 단가표</div>
+        <div class="panel-desc">원목, 합판, MDF 등 목재류 평균 시세입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-0">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-0">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 석고보드/단열재 -->
+    <div class="panel" id="panel-1">
+        <div class="panel-title">석고보드 / 단열재 단가표</div>
+        <div class="panel-desc">석고보드, 단열재, 경량철골 자재 시세입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-1">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-1">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 타일 -->
+    <div class="panel" id="panel-2">
+        <div class="panel-title">타일 단가표</div>
+        <div class="panel-desc">바닥·벽 타일 자재 평균 시세입니다. 수입 제품은 별도 문의.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-2">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-2">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 철물/건재 -->
+    <div class="panel" id="panel-3">
+        <div class="panel-title">철물 / 건재 단가표</div>
+        <div class="panel-desc">볼트·앵커·도어하드웨어 등 철물류 시세입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-3">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-3">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 도장/도배 -->
+    <div class="panel" id="panel-4">
+        <div class="panel-title">도장 / 도배 단가표</div>
+        <div class="panel-desc">페인트, 벽지류 자재 시세입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-4">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-4">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전기/조명 -->
+    <div class="panel" id="panel-5">
+        <div class="panel-title">전기 / 조명 단가표</div>
+        <div class="panel-desc">전선, 콘센트, 조명 등 전기 자재 시세입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>자재명</th><th>규격</th><th>단위</th><th>단가 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-5">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-5">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 시공비 -->
+    <div class="panel" id="panel-6">
+        <div class="panel-title">시공비 단가표</div>
+        <div class="panel-desc">서울·수도권 기준 평균 인건비 및 시공비입니다.</div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>공종</th><th>단위</th><th>시공비 (원)</th><th>비고</th></tr></thead>
+                <tbody id="tbody-6">
+                    <tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>
+                </tbody>
+            </table>
+            <div class="lock-overlay" id="lock-6">
+                <div class="lock-card">
+                    <div class="lock-icon">🔒</div>
+                    <h3>전체 단가표 보기</h3>
+                    <p>로그인하면 모든 자재 단가를<br>제한 없이 확인할 수 있습니다.</p>
+                    <button onclick="openModal()">로그인 / 회원가입</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+var currentUser = null;
+var pricesByTab = [[], [], [], [], [], [], []];
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadPrices() {
+    var res = await db.from('prices').select('*').order('tab_index').order('sort_order');
+    if (res.error) {
+        var isNotFound = res.error.message && res.error.message.indexOf('does not exist') !== -1;
+        var msg = isNotFound
+            ? 'prices 테이블이 없습니다. prices_setup.sql을 Supabase에서 실행해주세요.'
+            : '단가를 불러오지 못했습니다: ' + res.error.message;
+        for (var i = 0; i < 7; i++) {
+            var tb = document.getElementById('tbody-' + i);
+            if (tb) tb.innerHTML = '<tr><td colspan="' + (i === 6 ? 4 : 5) + '" style="text-align:center;padding:20px;color:#DC143C;font-size:13px;">' + escHtml(msg) + '</td></tr>';
+        }
+        return;
+    }
+    pricesByTab = [[], [], [], [], [], [], []];
+    (res.data || []).forEach(function(item) {
+        if (item.tab_index >= 0 && item.tab_index <= 6) pricesByTab[item.tab_index].push(item);
+    });
+    renderPrices();
+}
+
+function renderPrices() {
+    var isLoggedIn = !!currentUser;
+    for (var i = 0; i < 7; i++) {
+        var tb = document.getElementById('tbody-' + i);
+        if (!tb) continue;
+        var items = pricesByTab[i];
+        var isConstruction = (i === 6);
+        var cols = isConstruction ? 4 : 5;
+        var hasLocked = items.some(function(item) { return item.is_locked; });
+
+        if (items.length === 0) {
+            tb.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">등록된 단가가 없습니다.</td></tr>';
+        } else {
+            tb.innerHTML = items.map(function(item) {
+                var locked = item.is_locked && !isLoggedIn;
+                var cls = item.is_locked ? ' class="lockable' + (locked ? ' locked' : '') + '"' : '';
+                if (isConstruction) {
+                    return '<tr' + cls + '><td>' + escHtml(item.name) + '</td><td>' + escHtml(item.unit) + '</td><td class="price">' + escHtml(item.price_range) + '</td><td class="note">' + escHtml(item.note) + '</td></tr>';
+                }
+                return '<tr' + cls + '><td>' + escHtml(item.name) + '</td><td>' + escHtml(item.spec) + '</td><td>' + escHtml(item.unit) + '</td><td class="price">' + escHtml(item.price_range) + '</td><td class="note">' + escHtml(item.note) + '</td></tr>';
+            }).join('');
+        }
+
+        var overlay = document.getElementById('lock-' + i);
+        if (overlay) overlay.classList.toggle('show', !isLoggedIn && hasLocked);
+    }
+}
+
+window.onAuthChange = function(user) {
+    currentUser = user;
+    if (pricesByTab.some(function(t) { return t.length > 0; })) {
+        renderPrices();
+    }
+};
+
+function showTab(idx) {
+    document.querySelectorAll('.nav-tab').forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+    document.querySelectorAll('.panel').forEach(function(p, i) { p.classList.toggle('active', i === idx); });
+}
+
+loadPrices();
+</script>
+</body>
+</html>

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업체 등록 관리자</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: #f5f5f5; color: #333; }
+
+        /* 로그인 화면 */
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            background: #1a1a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 340px;
+            text-align: center;
+        }
+        .login-box h2 { font-size: 20px; color: #1a1a2e; margin-bottom: 6px; }
+        .login-box p  { font-size: 13px; color: #aaa; margin-bottom: 24px; }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .login-box input:focus { border-color: #1a1a2e; }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .login-btn:hover { background: #2d2d4e; }
+        .login-error {
+            color: #DC143C;
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+        .hidden { display: none !important; }
+
+        .header {
+            background: #1a1a2e;
+            color: white;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .header span { opacity: 0.5; font-size: 12px; font-weight: 400; margin-left: 10px; }
+
+        .layout {
+            display: flex;
+            height: calc(100vh - 50px);
+        }
+
+        /* 폼 영역 */
+        .form-panel {
+            width: 380px;
+            background: white;
+            overflow-y: auto;
+            padding: 20px;
+            border-right: 1px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #aaa;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus { border-color: #1a1a2e; }
+
+        .coord-row {
+            display: flex;
+            gap: 8px;
+        }
+        .coord-row input { flex: 1; }
+
+        .coord-hint {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+        .coord-hint strong { color: #4682B4; }
+
+        .btn-generate {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.15s;
+        }
+        .btn-generate:hover { background: #2d2d4e; }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #f0f0f0;
+            margin: 18px 0;
+        }
+
+        /* 결과 영역 */
+        .result-section { margin-top: 4px; }
+        .result-box {
+            background: #1e1e2e;
+            color: #a8ff78;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 60px;
+        }
+        .btn-copy {
+            width: 100%;
+            padding: 10px;
+            background: #2E8B57;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.15s;
+        }
+        .btn-copy:hover { background: #256d45; }
+        .btn-copy.copied { background: #888; }
+
+        .guide-box {
+            background: #f0f7ff;
+            border: 1px solid #b3d4f5;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            color: #3a6ea8;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        /* 지도 영역 */
+        .map-panel { flex: 1; position: relative; }
+        #map { width: 100%; height: 100%; }
+
+        .map-tooltip {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .marker-preview {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+            display: none;
+        }
+
+        /* 관리자 탭 */
+        .admin-tab-bar { background: #0f0f1e; padding: 0 24px; display: flex; }
+        .admin-tab { padding: 11px 20px; color: rgba(255,255,255,0.5); background: none; border: none; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; border-bottom: 2px solid transparent; }
+        .admin-tab.active { color: white; border-bottom-color: white; }
+
+        /* 단가 관리 */
+        #priceSection { display: none; padding: 20px; overflow-y: auto; height: calc(100vh - 90px); }
+        .price-form-card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .price-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .price-table-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .price-list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .price-list-table th { background: #1a1a2e; color: white; padding: 10px 12px; text-align: left; font-size: 12px; white-space: nowrap; }
+        .price-list-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+        .price-list-table tr:last-child td { border-bottom: none; }
+        .price-list-table tr:hover td { background: #f8f9fa; }
+        .locked-badge { font-size: 11px; background: #fff3e0; color: #e65100; padding: 2px 7px; border-radius: 4px; }
+        .unlocked-badge { font-size: 11px; background: #e8f5e9; color: #2E8B57; padding: 2px 7px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- 로그인 화면 -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <h2>관리자 로그인</h2>
+        <p>인테리어 자재 지도 관리자 페이지</p>
+        <input type="email" id="adminEmail" placeholder="관리자 이메일" onkeydown="if(event.key==='Enter') document.getElementById('adminPw').focus()">
+        <input type="password" id="adminPw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') adminLogin()">
+        <button class="login-btn" onclick="adminLogin()">로그인</button>
+        <p class="login-error" id="loginError"></p>
+    </div>
+</div>
+
+<div class="header">업체 등록 관리자 <span>지도를 클릭해서 좌표를 설정하세요</span></div>
+
+<div class="admin-tab-bar">
+    <button class="admin-tab active" id="adminTabStore" onclick="switchAdminTab('store')">업체 등록</button>
+    <button class="admin-tab" id="adminTabPrice" onclick="switchAdminTab('price')">단가 관리</button>
+</div>
+
+<div id="storeSection">
+<div class="layout">
+
+    <div class="form-panel">
+        <p class="section-title">업체 정보 입력</p>
+
+        <div class="form-group">
+            <label>업체명 *</label>
+            <input type="text" id="name" placeholder="예: 을지철물">
+        </div>
+
+        <div class="form-group">
+            <label>카테고리 *</label>
+            <select id="category">
+                <option value="">선택하세요</option>
+                <option value="철물건재">철물/건재</option>
+                <option value="인테리어철물">인테리어철물</option>
+                <option value="목자재">목자재</option>
+                <option value="타일자재">타일자재</option>
+                <option value="전기조명">전기/조명</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>주소 *</label>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="address" placeholder="예: 서울 중구 을지로 123" style="flex:1" onkeydown="if(event.key==='Enter') geocodeAddress()">
+                <button onclick="geocodeAddress()" style="padding:8px 12px;background:#4682B4;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;">좌표 찾기</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>전화번호</label>
+            <input type="text" id="phone" placeholder="예: 02-1234-5678">
+        </div>
+
+        <div class="form-group">
+            <label>영업시간</label>
+            <input type="text" id="hours" placeholder="예: 월-토 09:00-18:00">
+        </div>
+
+        <div class="form-group">
+            <label>좌표 (지도 클릭으로 자동 입력)</label>
+            <div class="coord-row">
+                <input type="text" id="lat" placeholder="위도 (lat)">
+                <input type="text" id="lng" placeholder="경도 (lng)">
+            </div>
+            <p class="coord-hint">오른쪽 지도에서 업체 위치를 <strong>클릭</strong>하면 자동으로 입력돼요</p>
+        </div>
+
+        <button class="btn-generate" onclick="saveStore()">업체 저장</button>
+
+        <div id="saveMsg" style="display:none;margin-top:12px;padding:10px;border-radius:6px;font-size:13px;text-align:center;"></div>
+    </div>
+
+    <div class="map-panel">
+        <div class="map-tooltip">📍 업체 위치를 클릭해서 좌표 설정</div>
+        <div id="map"></div>
+        <div class="marker-preview" id="markerPreview"></div>
+    </div>
+
+</div>
+</div><!-- /storeSection -->
+
+<div id="priceSection">
+    <div class="price-form-card">
+        <p class="section-title">단가 추가</p>
+        <div class="price-form-grid">
+            <div class="form-group">
+                <label>탭 *</label>
+                <select id="p-tab" onchange="onPriceTabChange(this.value)">
+                    <option value="0">목자재</option>
+                    <option value="1">석고보드/단열재</option>
+                    <option value="2">타일</option>
+                    <option value="3">철물/건재</option>
+                    <option value="4">도장/도배</option>
+                    <option value="5">전기/조명</option>
+                    <option value="6">시공비</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>자재명 / 공종 *</label>
+                <input type="text" id="p-name" placeholder="예: 합판 (일반)">
+            </div>
+            <div class="form-group" id="p-spec-group">
+                <label>규격</label>
+                <input type="text" id="p-spec" placeholder="예: 4×8자 (1220×2440mm)">
+            </div>
+            <div class="form-group">
+                <label>단위</label>
+                <input type="text" id="p-unit" placeholder="예: 장">
+            </div>
+            <div class="form-group">
+                <label>단가 (원) *</label>
+                <input type="text" id="p-price" placeholder="예: 18,000 ~ 25,000">
+            </div>
+            <div class="form-group">
+                <label>비고</label>
+                <input type="text" id="p-note" placeholder="예: 두께 9mm 기준">
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
+                <input type="checkbox" id="p-locked" checked style="width:auto;accent-color:#1a1a2e;">
+                로그인 필요 (잠금)
+            </label>
+            <input type="number" id="p-order" placeholder="순서 (숫자)" style="width:130px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;">
+            <button class="btn-generate" style="margin:0;padding:10px 28px;width:auto;" onclick="addPrice()">추가</button>
+        </div>
+        <div id="priceSaveMsg" style="display:none;margin-top:12px;padding:10px 12px;border-radius:6px;font-size:13px;"></div>
+    </div>
+
+    <div class="price-table-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <p class="section-title" style="margin:0;">단가 목록</p>
+            <select id="p-filter" onchange="loadPriceList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;">
+                <option value="">전체 보기</option>
+                <option value="0">목자재</option>
+                <option value="1">석고보드/단열재</option>
+                <option value="2">타일</option>
+                <option value="3">철물/건재</option>
+                <option value="4">도장/도배</option>
+                <option value="5">전기/조명</option>
+                <option value="6">시공비</option>
+            </select>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="price-list-table">
+                <thead><tr><th>탭</th><th>자재명/공종</th><th>규격</th><th>단위</th><th>단가</th><th>비고</th><th>잠금</th><th>삭제</th></tr></thead>
+                <tbody id="priceListBody">
+                    <tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">단가 관리 탭을 선택하면 목록이 나타납니다.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zcmxqf4ztx&submodules=geocoder"></script>
+<script>
+// ── Supabase 설정 ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://ppbbmwacrcerclbkxgsl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYmJtd2FjcmNlcmNsYmt4Z3NsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMjk3MTksImV4cCI6MjA5MjYwNTcxOX0.nCQhjtr4FwItRtIEu5jpkpPKmI3tzi7v87HAtzz0hpA';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── 관리자 이메일 허용 목록 ───────────────────────────────────
+var ADMIN_EMAILS = ['welovehyeok33@gmail.com'];
+
+function _setAdminScreen(allowed) {
+    if (allowed) {
+        document.getElementById('loginScreen').classList.add('hidden');
+    } else {
+        document.getElementById('loginScreen').classList.remove('hidden');
+    }
+}
+
+async function adminLogin() {
+    var email  = document.getElementById('adminEmail').value.trim();
+    var pw     = document.getElementById('adminPw').value;
+    var errEl  = document.getElementById('loginError');
+    errEl.textContent = ''; errEl.style.display = 'none';
+
+    if (!email || !pw) {
+        errEl.textContent = '이메일과 비밀번호를 입력해주세요.';
+        errEl.style.display = 'block'; return;
+    }
+    var res = await db.auth.signInWithPassword({ email: email, password: pw });
+    if (res.error) {
+        errEl.textContent = '로그인 실패: ' + res.error.message;
+        errEl.style.display = 'block'; return;
+    }
+    if (!ADMIN_EMAILS.includes(res.data.user.email)) {
+        await db.auth.signOut();
+        errEl.textContent = '관리자 권한이 없습니다.';
+        errEl.style.display = 'block'; return;
+    }
+    _setAdminScreen(true);
+}
+
+db.auth.onAuthStateChange(function(e, s) {
+    var user = s ? s.user : null;
+    _setAdminScreen(user && ADMIN_EMAILS.includes(user.email));
+});
+db.auth.getSession().then(function(r) {
+    var user = r.data.session ? r.data.session.user : null;
+    _setAdminScreen(user && ADMIN_EMAILS.includes(user.email));
+});
+
+// ── 지도 ──────────────────────────────────────────────────────
+var map;
+var clickMarker = null;
+
+var CAT_COLOR = {
+    "철물건재": "#708090", "인테리어철물": "#2E8B57",
+    "목자재": "#8B4513", "타일자재": "#4682B4",
+    "전기조명": "#DAA520",
+};
+
+window.onload = async function () {
+    map = new naver.maps.Map("map", {
+        center: new naver.maps.LatLng(37.5665, 126.9940),
+        zoom: 13,
+    });
+
+    var result = await db.from("stores").select("*");
+    if (result.data) {
+        result.data.forEach(function (store) {
+            if (!store.lat || !store.lng) return;
+            var color = CAT_COLOR[store.category] || "#888";
+            var marker = new naver.maps.Marker({
+                position: new naver.maps.LatLng(store.lat, store.lng),
+                map: map,
+                icon: {
+                    content: '<div style="width:28px;height:28px;background:' + color + ';border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);color:white;font-size:10px;font-weight:700;">' + store.name.charAt(0) + '</span></div>',
+                    anchor: new naver.maps.Point(14, 28)
+                },
+                title: store.name,
+            });
+            var infowindow = new naver.maps.InfoWindow({
+                content: '<div style="padding:8px 12px;font-size:13px;font-weight:600;">' + store.name + '<br><span style="font-size:11px;color:#888;font-weight:400;">' + store.category + '</span></div>'
+            });
+            naver.maps.Event.addListener(marker, "click", function () {
+                infowindow.open(map, marker);
+            });
+        });
+    }
+
+    naver.maps.Event.addListener(map, "click", function (e) {
+        var lat = e.coord.lat().toFixed(6);
+        var lng = e.coord.lng().toFixed(6);
+
+        document.getElementById("lat").value = lat;
+        document.getElementById("lng").value = lng;
+
+        var category = document.getElementById("category").value;
+        var color = CAT_COLOR[category] || "#1a1a2e";
+
+        if (clickMarker) clickMarker.setMap(null);
+
+        clickMarker = new naver.maps.Marker({
+            position: new naver.maps.LatLng(lat, lng),
+            map: map,
+            icon: {
+                content: '<div style="width:32px;height:32px;background:' + color + ';border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+                anchor: new naver.maps.Point(16, 32)
+            },
+        });
+
+        var preview = document.getElementById("markerPreview");
+        preview.style.display = "block";
+        preview.textContent = "📍 " + (document.getElementById("name").value || "선택한 위치") + " (" + lat + ", " + lng + ")";
+    });
+};
+
+// ── 주소 → 좌표 자동 변환 ────────────────────────────────────
+function geocodeAddress() {
+    var address = document.getElementById("address").value.trim();
+    if (!address) { alert("주소를 입력해주세요."); return; }
+
+    naver.maps.Service.geocode({ query: address }, function (status, response) {
+        if (status !== naver.maps.Service.Status.OK || !response.v2.addresses.length) {
+            alert("주소를 찾을 수 없어요. 더 자세히 입력해보세요.");
+            return;
+        }
+
+        var result = response.v2.addresses[0];
+        var lat = parseFloat(result.y).toFixed(6);
+        var lng = parseFloat(result.x).toFixed(6);
+
+        document.getElementById("lat").value = lat;
+        document.getElementById("lng").value = lng;
+
+        var latlng = new naver.maps.LatLng(lat, lng);
+        map.panTo(latlng);
+        map.setZoom(17);
+
+        var category = document.getElementById("category").value;
+        var color = CAT_COLOR[category] || "#1a1a2e";
+
+        if (clickMarker) clickMarker.setMap(null);
+        clickMarker = new naver.maps.Marker({
+            position: latlng,
+            map: map,
+            icon: {
+                content: '<div style="width:32px;height:32px;background:' + color + ';border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+                anchor: new naver.maps.Point(16, 32)
+            },
+        });
+
+        var preview = document.getElementById("markerPreview");
+        preview.style.display = "block";
+        preview.textContent = "📍 " + (document.getElementById("name").value || address) + " (" + lat + ", " + lng + ")";
+    });
+}
+
+// ── 업체 저장 ─────────────────────────────────────────────────
+async function saveStore() {
+    var name     = document.getElementById("name").value.trim();
+    var category = document.getElementById("category").value;
+    var address  = document.getElementById("address").value.trim();
+    var phone    = document.getElementById("phone").value.trim();
+    var lat      = document.getElementById("lat").value.trim();
+    var lng      = document.getElementById("lng").value.trim();
+
+    if (!name || !category || !address) {
+        showMsg("업체명, 카테고리, 주소는 필수입니다.", "error");
+        return;
+    }
+    if (!lat || !lng) {
+        showMsg("지도를 클릭해서 좌표를 설정해주세요.", "error");
+        return;
+    }
+
+    var btn = document.querySelector(".btn-generate");
+    btn.textContent = "저장 중...";
+    btn.disabled = true;
+
+    var hours = document.getElementById("hours").value.trim();
+
+    var result = await db.from("stores").insert([{
+        name: name, category: category,
+        address: address, phone: phone,
+        lat: parseFloat(lat), lng: parseFloat(lng),
+        hours: hours || null,
+    }]);
+
+    btn.textContent = "업체 저장";
+    btn.disabled = false;
+
+    if (result.error) {
+        showMsg("저장 실패: " + result.error.message, "error");
+        return;
+    }
+
+    showMsg("저장 완료! 지도에 바로 반영됩니다.", "success");
+    resetForm();
+}
+
+function showMsg(msg, type) {
+    var el = document.getElementById("saveMsg");
+    el.textContent = msg;
+    el.style.display = "block";
+    el.style.background = type === "success" ? "#e6f4ea" : "#fdecea";
+    el.style.color       = type === "success" ? "#2E8B57"  : "#DC143C";
+    el.style.border      = "1px solid " + (type === "success" ? "#a8d5b5" : "#f5c6cb");
+}
+
+function resetForm() {
+    ["name", "category", "address", "phone", "hours", "lat", "lng"].forEach(function(id) {
+        document.getElementById(id).value = "";
+    });
+    if (clickMarker) { clickMarker.setMap(null); clickMarker = null; }
+    document.getElementById("markerPreview").style.display = "none";
+}
+
+// ── 단가 관리 ──────────────────────────────────────────────────
+var TAB_NAMES = ['목자재', '석고보드/단열재', '타일', '철물/건재', '도장/도배', '전기/조명', '시공비'];
+
+function switchAdminTab(tab) {
+    document.getElementById('adminTabStore').classList.toggle('active', tab === 'store');
+    document.getElementById('adminTabPrice').classList.toggle('active', tab === 'price');
+    document.getElementById('storeSection').style.display = tab === 'store' ? '' : 'none';
+    document.getElementById('priceSection').style.display = tab === 'price' ? 'block' : 'none';
+    if (tab === 'store' && map) setTimeout(function() { map.autoResize(); }, 100);
+    if (tab === 'price') loadPriceList();
+}
+
+function onPriceTabChange(val) {
+    document.getElementById('p-spec-group').style.display = val === '6' ? 'none' : '';
+}
+
+async function loadPriceList() {
+    var body = document.getElementById('priceListBody');
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">불러오는 중...</td></tr>';
+    var filterTab = document.getElementById('p-filter').value;
+    var query = db.from('prices').select('*').order('tab_index').order('sort_order');
+    if (filterTab !== '') query = query.eq('tab_index', parseInt(filterTab));
+    var res = await query;
+    if (res.error) {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#DC143C;font-size:13px;">불러오기 실패: ' + escAdmin(res.error.message) + '</td></tr>';
+        return;
+    }
+    var items = res.data || [];
+    if (items.length === 0) {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa;font-size:13px;">등록된 단가가 없습니다.<br><small>prices_setup.sql을 Supabase SQL 에디터에서 실행하거나 위 폼으로 직접 추가하세요.</small></td></tr>';
+        return;
+    }
+    body.innerHTML = items.map(function(item) {
+        return '<tr>' +
+            '<td style="white-space:nowrap;color:#888;">' + escAdmin(TAB_NAMES[item.tab_index] || '') + '</td>' +
+            '<td>' + escAdmin(item.name) + '</td>' +
+            '<td style="color:#888;">' + escAdmin(item.spec || '-') + '</td>' +
+            '<td style="color:#888;">' + escAdmin(item.unit || '-') + '</td>' +
+            '<td style="white-space:nowrap;font-weight:600;">' + escAdmin(item.price_range) + '</td>' +
+            '<td style="color:#888;font-size:12px;">' + escAdmin(item.note || '-') + '</td>' +
+            '<td><span class="' + (item.is_locked ? 'locked-badge' : 'unlocked-badge') + '">' + (item.is_locked ? '잠금' : '공개') + '</span></td>' +
+            '<td><button onclick="deletePrice(' + item.id + ')" style="background:none;border:none;cursor:pointer;color:#DC143C;font-size:16px;padding:2px 6px;">✕</button></td>' +
+        '</tr>';
+    }).join('');
+}
+
+async function addPrice() {
+    var tabIdx = parseInt(document.getElementById('p-tab').value);
+    var name   = document.getElementById('p-name').value.trim();
+    var spec   = document.getElementById('p-spec').value.trim();
+    var unit   = document.getElementById('p-unit').value.trim();
+    var price  = document.getElementById('p-price').value.trim();
+    var note   = document.getElementById('p-note').value.trim();
+    var locked = document.getElementById('p-locked').checked;
+    var order  = parseInt(document.getElementById('p-order').value) || 0;
+
+    if (!name || !price) { showPriceMsg('자재명과 단가는 필수입니다.', 'error'); return; }
+
+    var res = await db.from('prices').insert([{
+        tab_index: tabIdx, name: name, spec: spec, unit: unit,
+        price_range: price, note: note, is_locked: locked, sort_order: order
+    }]);
+    if (res.error) { showPriceMsg('추가 실패: ' + res.error.message, 'error'); return; }
+
+    showPriceMsg('추가 완료!', 'success');
+    ['p-name', 'p-spec', 'p-unit', 'p-price', 'p-note', 'p-order'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('p-locked').checked = true;
+    loadPriceList();
+}
+
+async function deletePrice(id) {
+    if (!confirm('이 단가 항목을 삭제할까요?')) return;
+    var res = await db.from('prices').delete().eq('id', id);
+    if (res.error) { alert('삭제 실패: ' + res.error.message); return; }
+    loadPriceList();
+}
+
+function showPriceMsg(msg, type) {
+    var el = document.getElementById('priceSaveMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.background = type === 'success' ? '#e6f4ea' : '#fdecea';
+    el.style.color       = type === 'success' ? '#2E8B57'  : '#DC143C';
+    el.style.border      = '1px solid ' + (type === 'success' ? '#a8d5b5' : '#f5c6cb');
+    setTimeout(function() { el.style.display = 'none'; }, 3000);
+}
+
+function escAdmin(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

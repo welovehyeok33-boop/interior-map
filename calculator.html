@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인테리어 계산기</title>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+
+        .nav-tabs {
+            position: fixed;
+            top: 56px; left: 0; right: 0;
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            gap: 0;
+            z-index: 999;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-family: inherit;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #888;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s;
+        }
+        .nav-tab:hover { color: #333; }
+        .nav-tab.active { color: #1a1a2e; font-weight: 700; border-bottom-color: #1a1a2e; }
+
+        .content {
+            margin-top: 104px;
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 32px 24px;
+        }
+
+        .calc-panel { display: none; }
+        .calc-panel.active { display: block; }
+
+        .calc-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 6px;
+        }
+        .calc-desc {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .form-grid.single { grid-template-columns: 1fr; }
+        .form-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+        }
+        .form-group input,
+        .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .form-group input:focus,
+        .form-group select:focus { border-color: #1a1a2e; }
+
+        .unit {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 2px;
+        }
+
+        .btn-calc {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-bottom: 20px;
+        }
+        .btn-calc:hover { background: #2d2d4e; }
+
+        .result-box {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e8e8e8;
+            overflow: hidden;
+            display: none;
+        }
+        .result-box.show { display: block; }
+
+        .result-header {
+            background: #1a1a2e;
+            color: white;
+            padding: 14px 20px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .result-items { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .result-item-label { font-size: 13px; color: #666; }
+        .result-item-value { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+        .result-item-value span { font-size: 12px; font-weight: 400; color: #888; margin-left: 4px; }
+
+        .result-item.highlight { background: #eef2ff; }
+        .result-item.highlight .result-item-value { color: #3730a3; }
+
+        .notice {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #fff8e1;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .divider { border: none; border-top: 1px solid #f0f0f0; margin: 20px 0; }
+
+        @media (max-width: 768px) {
+
+            /* 탭 */
+            .nav-tab { padding: 11px 14px; font-size: 12px; }
+
+            /* 콘텐츠 */
+            .content { padding: 16px 14px; }
+            .calc-title { font-size: 18px; }
+
+            /* 폼 그리드 */
+            .form-grid { grid-template-columns: 1fr; }
+            .form-grid.triple { grid-template-columns: 1fr 1fr; }
+
+            /* 결과 박스 */
+            .result-box { padding: 16px; }
+            .result-main { font-size: 28px; }
+
+            /* 입력 font-size 16px → 모바일 확대 방지 */
+            .form-input, .form-select { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <h1>인테리어 계산기</h1>
+        <span>자재 수량 자동 계산</span>
+    </div>
+    <nav class="header-nav">
+        <a href="index.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">자재 지도</a>
+        <a href="calculator.html" class="nav-link active" style="color:white;text-decoration:none;background:rgba(255,255,255,0.15);font-weight:700;">자재 계산기</a>
+        <a href="schedule.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">공정표</a>
+        <a href="prices.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">단가표</a>
+        <a href="board.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">게시판</a>
+        <span class="user-email" id="userEmail" style="display:none"></span>
+        <button class="auth-btn" id="authBtn" onclick="openModal()">로그인</button>
+    </nav>
+</header>
+
+<nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab(0)">석고보드</button>
+    <button class="nav-tab" onclick="showTab(1)">MDF/합판</button>
+    <button class="nav-tab" onclick="showTab(2)">다루끼</button>
+    <button class="nav-tab" onclick="showTab(3)">스터드</button>
+    <button class="nav-tab" onclick="showTab(4)">몰탈</button>
+    <button class="nav-tab" onclick="showTab(5)">타일</button>
+    <button class="nav-tab" onclick="showTab(6)">페인트</button>
+    <button class="nav-tab" onclick="showTab(7)">도배</button>
+    <button class="nav-tab" onclick="showTab(8)">에어컨</button>
+</nav>
+
+<div class="content">
+
+    <!-- 1. 석고보드 -->
+    <div class="calc-panel active" id="panel-0">
+        <div class="calc-title">석고보드 수량 계산기</div>
+        <div class="calc-desc">시공 면적을 입력하면 필요한 석고보드 장수를 계산합니다.<br>표준 규격 9.5T 900×1800mm 기준</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>가로</label>
+                <input type="number" id="gb-w" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>세로</label>
+                <input type="number" id="gb-h" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>겹수</label>
+                <select id="gb-layer">
+                    <option value="1">1겹</option>
+                    <option value="2">2겹</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>여유율</label>
+                <select id="gb-margin">
+                    <option value="1.05">5% (단순 면)</option>
+                    <option value="1.10" selected>10% (일반)</option>
+                    <option value="1.15">15% (복잡한 면)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcGypsum()">계산하기</button>
+        <div class="result-box" id="gb-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="gb-result-items"></div>
+        </div>
+        <div class="notice">※ 석고보드 표준 규격: 900×1800mm (1.62㎡/장) / 여유율은 절단 손실 및 불량을 고려한 값입니다.</div>
+    </div>
+
+    <!-- 2. MDF/합판 -->
+    <div class="calc-panel" id="panel-1">
+        <div class="calc-title">MDF/합판 수량 계산기</div>
+        <div class="calc-desc">시공 면적을 입력하면 필요한 MDF 또는 합판 장수를 계산합니다.<br>표준 규격 1220×2440mm 기준</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>가로</label>
+                <input type="number" id="mdf-w" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>세로</label>
+                <input type="number" id="mdf-h" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>두께</label>
+                <select id="mdf-thick">
+                    <option value="9">9mm</option>
+                    <option value="11">11mm</option>
+                    <option value="15">15mm</option>
+                    <option value="18" selected>18mm</option>
+                    <option value="24">24mm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>여유율</label>
+                <select id="mdf-margin">
+                    <option value="1.05" selected>5% (일반)</option>
+                    <option value="1.10">10% (복잡한 면)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcMDF()">계산하기</button>
+        <div class="result-box" id="mdf-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="mdf-result-items"></div>
+        </div>
+        <div class="notice">※ MDF/합판 표준 규격: 1220×2440mm (2.9768㎡/장)</div>
+    </div>
+
+    <!-- 3. 다루끼 -->
+    <div class="calc-panel" id="panel-2">
+        <div class="calc-title">다루끼 수량 계산기</div>
+        <div class="calc-desc">천장 또는 벽체 골조에 필요한 다루끼(각재) 수량을 계산합니다.<br>30×40mm 또는 40×50mm 각재 기준</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>가로</label>
+                <input type="number" id="dk-w" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>세로</label>
+                <input type="number" id="dk-h" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>간격</label>
+                <select id="dk-gap">
+                    <option value="0.303" selected>303mm (1자)</option>
+                    <option value="0.455">455mm (1.5자)</option>
+                    <option value="0.606">606mm (2자)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>다루끼 길이</label>
+                <select id="dk-len">
+                    <option value="3.6" selected>3.6m</option>
+                    <option value="4.0">4.0m</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcDaruki()">계산하기</button>
+        <div class="result-box" id="dk-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="dk-result-items"></div>
+        </div>
+        <div class="notice">※ 가로/세로 양방향 격자 배치 기준이며, 10% 여유율이 포함됩니다.</div>
+    </div>
+
+    <!-- 4. 스터드 -->
+    <div class="calc-panel" id="panel-3">
+        <div class="calc-title">스터드 수량 계산기</div>
+        <div class="calc-desc">경량철골(LGS) 벽체 시공에 필요한 스터드 및 런너 수량을 계산합니다.</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>벽 길이</label>
+                <input type="number" id="st-len" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>벽 높이</label>
+                <input type="number" id="st-h" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>스터드 간격</label>
+                <select id="st-gap">
+                    <option value="0.303" selected>303mm</option>
+                    <option value="0.455">455mm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>스터드 규격</label>
+                <select id="st-type">
+                    <option value="65">65mm</option>
+                    <option value="75" selected>75mm</option>
+                    <option value="90">90mm</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcStud()">계산하기</button>
+        <div class="result-box" id="st-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="st-result-items"></div>
+        </div>
+        <div class="notice">※ 런너는 바닥+천장 2줄 기준, 스터드 길이는 벽높이 기준입니다.</div>
+    </div>
+
+    <!-- 5. 몰탈 -->
+    <div class="calc-panel" id="panel-4">
+        <div class="calc-title">몰탈 수량 계산기</div>
+        <div class="calc-desc">바닥 미장 또는 타일 붙임용 몰탈 재료량을 계산합니다.<br>시멘트:모래 = 1:3 배합 기준</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>면적</label>
+                <input type="number" id="mt-area" placeholder="0" min="0" step="0.1">
+                <span class="unit">㎡</span>
+            </div>
+            <div class="form-group">
+                <label>두께</label>
+                <input type="number" id="mt-thick" placeholder="30" min="1" step="1" value="30">
+                <span class="unit">mm</span>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcMortar()">계산하기</button>
+        <div class="result-box" id="mt-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="mt-result-items"></div>
+        </div>
+        <div class="notice">※ 시멘트 1포 = 25kg 기준 / 20% 여유율 포함 / 실제 현장 조건에 따라 달라질 수 있습니다.</div>
+    </div>
+
+    <!-- 6. 타일 -->
+    <div class="calc-panel" id="panel-5">
+        <div class="calc-title">타일 수량 계산기</div>
+        <div class="calc-desc">시공 면적과 타일 크기를 입력하면 필요한 타일 장수를 계산합니다.</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>시공 가로</label>
+                <input type="number" id="tl-w" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>시공 세로</label>
+                <input type="number" id="tl-h" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>타일 가로</label>
+                <input type="number" id="tl-tw" placeholder="300" min="1" value="300">
+                <span class="unit">mm</span>
+            </div>
+            <div class="form-group">
+                <label>타일 세로</label>
+                <input type="number" id="tl-th" placeholder="300" min="1" value="300">
+                <span class="unit">mm</span>
+            </div>
+            <div class="form-group">
+                <label>줄눈 폭</label>
+                <select id="tl-joint">
+                    <option value="2">2mm</option>
+                    <option value="3" selected>3mm</option>
+                    <option value="5">5mm</option>
+                    <option value="10">10mm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>여유율</label>
+                <select id="tl-margin">
+                    <option value="1.05">5% (직각시공)</option>
+                    <option value="1.10" selected>10% (일반)</option>
+                    <option value="1.15">15% (대각선시공)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcTile()">계산하기</button>
+        <div class="result-box" id="tl-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="tl-result-items"></div>
+        </div>
+        <div class="notice">※ 대각선(사선) 시공 시 15% 여유율 선택을 권장합니다.</div>
+    </div>
+
+    <!-- 7. 페인트 -->
+    <div class="calc-panel" id="panel-6">
+        <div class="calc-title">페인트 수량 계산기</div>
+        <div class="calc-desc">시공 면적과 도포 횟수를 입력하면 필요한 페인트 양을 계산합니다.</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>시공 면적</label>
+                <input type="number" id="pt-area" placeholder="0" min="0" step="0.1">
+                <span class="unit">㎡</span>
+            </div>
+            <div class="form-group">
+                <label>도포 횟수</label>
+                <select id="pt-coat">
+                    <option value="1">1회</option>
+                    <option value="2" selected>2회</option>
+                    <option value="3">3회</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>페인트 종류</label>
+                <select id="pt-type">
+                    <option value="7" selected>수성페인트 (7㎡/L)</option>
+                    <option value="9">유성페인트 (9㎡/L)</option>
+                    <option value="5">프라이머 (5㎡/L)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcPaint()">계산하기</button>
+        <div class="result-box" id="pt-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="pt-result-items"></div>
+        </div>
+        <div class="notice">※ 도포율은 평균값이며, 바탕면 상태·희석 비율에 따라 달라질 수 있습니다.</div>
+    </div>
+
+    <!-- 8. 도배 -->
+    <div class="calc-panel" id="panel-7">
+        <div class="calc-title">도배 수량 계산기</div>
+        <div class="calc-desc">방 크기를 입력하면 벽지 롤 수를 계산합니다.<br>합지 0.53×17m / 실크 0.53×15m 기준</div>
+        <div class="form-grid triple">
+            <div class="form-group">
+                <label>방 가로</label>
+                <input type="number" id="wp-w" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>방 세로</label>
+                <input type="number" id="wp-d" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+            <div class="form-group">
+                <label>천장 높이</label>
+                <input type="number" id="wp-h" placeholder="2.4" value="2.4" min="0" step="0.1">
+                <span class="unit">m</span>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>벽지 종류</label>
+                <select id="wp-type">
+                    <option value="9.01" selected>합지 (0.53×17m)</option>
+                    <option value="7.95">실크 (0.53×15m)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>천장 포함</label>
+                <select id="wp-ceiling">
+                    <option value="1">포함</option>
+                    <option value="0" selected>제외</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcWallpaper()">계산하기</button>
+        <div class="result-box" id="wp-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="wp-result-items"></div>
+        </div>
+        <div class="notice">※ 문/창문 면적은 별도 차감 없이 계산되며, 10% 여유율이 포함됩니다.</div>
+    </div>
+
+    <!-- 9. 에어컨 -->
+    <div class="calc-panel" id="panel-8">
+        <div class="calc-title">에어컨 냉방 평수 계산기</div>
+        <div class="calc-desc">실내 면적과 조건을 입력하면 적정 에어컨 용량을 계산합니다.</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>실내 면적</label>
+                <input type="number" id="ac-area" placeholder="0" min="0" step="0.1">
+                <span class="unit">㎡ (평 × 3.3)</span>
+            </div>
+            <div class="form-group">
+                <label>층 위치</label>
+                <select id="ac-floor">
+                    <option value="1.0">중간층</option>
+                    <option value="1.15">최상층 (직사광선)</option>
+                    <option value="0.9">지하층</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>단열 상태</label>
+                <select id="ac-insul">
+                    <option value="0.9">좋음 (신축/리모델링)</option>
+                    <option value="1.0" selected>보통</option>
+                    <option value="1.15">나쁨 (노후 건물)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>사용 인원</label>
+                <select id="ac-people">
+                    <option value="0">0명</option>
+                    <option value="1" selected>1~2명</option>
+                    <option value="2">3~4명</option>
+                    <option value="3">5명 이상</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn-calc" onclick="calcAC()">계산하기</button>
+        <div class="result-box" id="ac-result">
+            <div class="result-header">계산 결과</div>
+            <div class="result-items" id="ac-result-items"></div>
+        </div>
+        <div class="notice">※ 1평 = 3.3058㎡ / 냉방능력 기준: 600BTU/㎡ / 실제 환경에 따라 ±20% 차이가 날 수 있습니다.</div>
+    </div>
+
+</div>
+
+<script>
+function showTab(idx) {
+    document.querySelectorAll('.nav-tab').forEach(function(t, i) {
+        t.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.calc-panel').forEach(function(p, i) {
+        p.classList.toggle('active', i === idx);
+    });
+}
+
+function renderResult(id, items) {
+    var box = document.getElementById(id + '-result');
+    var container = document.getElementById(id + '-result-items');
+    box.classList.add('show');
+    container.innerHTML = items.map(function(item) {
+        return '<div class="result-item' + (item.highlight ? ' highlight' : '') + '">' +
+            '<span class="result-item-label">' + item.label + '</span>' +
+            '<span class="result-item-value">' + item.value + '<span>' + item.unit + '</span></span>' +
+            '</div>';
+    }).join('');
+}
+
+// 석고보드
+function calcGypsum() {
+    var w = parseFloat(document.getElementById('gb-w').value) || 0;
+    var h = parseFloat(document.getElementById('gb-h').value) || 0;
+    var layer = parseInt(document.getElementById('gb-layer').value);
+    var margin = parseFloat(document.getElementById('gb-margin').value);
+    if (!w || !h) { alert('가로와 세로를 입력해주세요.'); return; }
+    var area = w * h;
+    var sheets = Math.ceil(area / 1.62 * margin) * layer;
+    renderResult('gb', [
+        { label: '시공 면적', value: area.toFixed(2), unit: '㎡' },
+        { label: '필요 수량 (' + layer + '겹)', value: sheets, unit: '장', highlight: true },
+        { label: '평수 환산', value: (area / 3.3058).toFixed(1), unit: '평' },
+    ]);
+}
+
+// MDF/합판
+function calcMDF() {
+    var w = parseFloat(document.getElementById('mdf-w').value) || 0;
+    var h = parseFloat(document.getElementById('mdf-h').value) || 0;
+    var margin = parseFloat(document.getElementById('mdf-margin').value);
+    if (!w || !h) { alert('가로와 세로를 입력해주세요.'); return; }
+    var area = w * h;
+    var sheets = Math.ceil(area / 2.9768 * margin);
+    renderResult('mdf', [
+        { label: '시공 면적', value: area.toFixed(2), unit: '㎡' },
+        { label: '필요 수량', value: sheets, unit: '장', highlight: true },
+        { label: '1장당 면적', value: '2.98', unit: '㎡' },
+    ]);
+}
+
+// 다루끼
+function calcDaruki() {
+    var w = parseFloat(document.getElementById('dk-w').value) || 0;
+    var h = parseFloat(document.getElementById('dk-h').value) || 0;
+    var gap = parseFloat(document.getElementById('dk-gap').value);
+    var len = parseFloat(document.getElementById('dk-len').value);
+    if (!w || !h) { alert('가로와 세로를 입력해주세요.'); return; }
+    var rowsW = Math.ceil(w / gap) + 1;
+    var rowsH = Math.ceil(h / gap) + 1;
+    var totalLen = (rowsW * h) + (rowsH * w);
+    var count = Math.ceil(totalLen / len * 1.1);
+    renderResult('dk', [
+        { label: '총 연장', value: totalLen.toFixed(1), unit: 'm' },
+        { label: '필요 수량', value: count, unit: '개', highlight: true },
+        { label: '가로 줄수', value: rowsW, unit: '줄' },
+        { label: '세로 줄수', value: rowsH, unit: '줄' },
+    ]);
+}
+
+// 스터드
+function calcStud() {
+    var len = parseFloat(document.getElementById('st-len').value) || 0;
+    var h = parseFloat(document.getElementById('st-h').value) || 0;
+    var gap = parseFloat(document.getElementById('st-gap').value);
+    if (!len || !h) { alert('벽 길이와 높이를 입력해주세요.'); return; }
+    var studCount = Math.ceil(len / gap) + 1;
+    var runnerLen = Math.ceil(len * 2 * 1.05);
+    renderResult('st', [
+        { label: '스터드 수량', value: studCount, unit: '개', highlight: true },
+        { label: '스터드 길이', value: h.toFixed(1), unit: 'm/개' },
+        { label: '런너 총 길이', value: runnerLen, unit: 'm' },
+    ]);
+}
+
+// 몰탈
+function calcMortar() {
+    var area = parseFloat(document.getElementById('mt-area').value) || 0;
+    var thick = parseFloat(document.getElementById('mt-thick').value) || 0;
+    if (!area || !thick) { alert('면적과 두께를 입력해주세요.'); return; }
+    var vol = area * (thick / 1000) * 1.2;
+    var cement = Math.ceil(vol * 480 / 25);
+    var sand = (vol * 0.75).toFixed(2);
+    renderResult('mt', [
+        { label: '몰탈 부피', value: vol.toFixed(3), unit: '㎥' },
+        { label: '시멘트', value: cement, unit: '포 (25kg)', highlight: true },
+        { label: '모래', value: sand, unit: '㎥', highlight: true },
+    ]);
+}
+
+// 타일
+function calcTile() {
+    var w = parseFloat(document.getElementById('tl-w').value) || 0;
+    var h = parseFloat(document.getElementById('tl-h').value) || 0;
+    var tw = parseFloat(document.getElementById('tl-tw').value) || 0;
+    var th = parseFloat(document.getElementById('tl-th').value) || 0;
+    var joint = parseFloat(document.getElementById('tl-joint').value);
+    var margin = parseFloat(document.getElementById('tl-margin').value);
+    if (!w || !h || !tw || !th) { alert('모든 항목을 입력해주세요.'); return; }
+    var area = w * h;
+    var tileArea = ((tw + joint) / 1000) * ((th + joint) / 1000);
+    var count = Math.ceil(area / tileArea * margin);
+    renderResult('tl', [
+        { label: '시공 면적', value: area.toFixed(2), unit: '㎡' },
+        { label: '타일 1장 면적', value: (tileArea * 10000).toFixed(0), unit: 'cm²' },
+        { label: '필요 수량', value: count, unit: '장', highlight: true },
+    ]);
+}
+
+// 페인트
+function calcPaint() {
+    var area = parseFloat(document.getElementById('pt-area').value) || 0;
+    var coat = parseInt(document.getElementById('pt-coat').value);
+    var rate = parseFloat(document.getElementById('pt-type').value);
+    if (!area) { alert('면적을 입력해주세요.'); return; }
+    var totalL = area * coat / rate;
+    var l4 = Math.ceil(totalL / 4);
+    var l18 = Math.ceil(totalL / 18);
+    renderResult('pt', [
+        { label: '필요량 (총)', value: totalL.toFixed(1), unit: 'L', highlight: true },
+        { label: '4L 기준', value: l4, unit: '통' },
+        { label: '18L 기준', value: l18, unit: '통' },
+    ]);
+}
+
+// 도배
+function calcWallpaper() {
+    var w = parseFloat(document.getElementById('wp-w').value) || 0;
+    var d = parseFloat(document.getElementById('wp-d').value) || 0;
+    var h = parseFloat(document.getElementById('wp-h').value) || 2.4;
+    var rollArea = parseFloat(document.getElementById('wp-type').value);
+    var ceiling = parseInt(document.getElementById('wp-ceiling').value);
+    if (!w || !d) { alert('방 가로와 세로를 입력해주세요.'); return; }
+    var wallArea = (w + d) * 2 * h;
+    var ceilArea = ceiling ? w * d : 0;
+    var totalArea = (wallArea + ceilArea) * 1.1;
+    var rolls = Math.ceil(totalArea / rollArea);
+    renderResult('wp', [
+        { label: '벽면 면적', value: wallArea.toFixed(2), unit: '㎡' },
+        { label: '총 면적 (여유 포함)', value: totalArea.toFixed(2), unit: '㎡' },
+        { label: '필요 롤 수', value: rolls, unit: '롤', highlight: true },
+    ]);
+}
+
+// 에어컨
+function calcAC() {
+    var area = parseFloat(document.getElementById('ac-area').value) || 0;
+    var floor = parseFloat(document.getElementById('ac-floor').value);
+    var insul = parseFloat(document.getElementById('ac-insul').value);
+    var people = parseInt(document.getElementById('ac-people').value);
+    if (!area) { alert('실내 면적을 입력해주세요.'); return; }
+    var btu = area * 600 * floor * insul + people * 500;
+    var kw = (btu / 3412).toFixed(2);
+    var pyeong = (area / 3.3058).toFixed(1);
+    var grade = btu < 6000 ? '소형 (6평 이하)' : btu < 10000 ? '중소형 (6~10평)' : btu < 18000 ? '중형 (10~18평)' : '대형 (18평 이상)';
+    renderResult('ac', [
+        { label: '면적', value: pyeong, unit: '평' },
+        { label: '필요 냉방능력', value: Math.ceil(btu / 100) * 100, unit: 'BTU/h', highlight: true },
+        { label: 'kW 환산', value: kw, unit: 'kW' },
+        { label: '권장 등급', value: grade, unit: '' },
+    ]);
+}
+</script>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

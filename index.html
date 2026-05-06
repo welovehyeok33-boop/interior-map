@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인테리어 자재 지도 - 서울·수도권</title>
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-inner">
+            <h1 class="logo">인테리어 자재 지도</h1>
+            <span class="subtitle">서울·수도권 검증 업체</span>
+        </div>
+        <nav class="header-nav">
+            <a href="index.html" class="nav-link active" style="color:white;text-decoration:none;background:rgba(255,255,255,0.15);font-weight:700;">자재 지도</a>
+            <a href="calculator.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">자재 계산기</a>
+            <a href="schedule.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">공정표</a>
+            <a href="prices.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">단가표</a>
+            <a href="board.html" class="nav-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">게시판</a>
+            <span id="userEmail" style="display:none;font-size:12px;color:rgba(255,255,255,0.55);white-space:nowrap;"></span>
+            <button id="authBtn" class="auth-btn" onclick="openModal()">로그인</button>
+        </nav>
+    </header>
+
+    <div class="layout">
+
+        <aside class="sidebar" id="mobileSidebar">
+            <div class="sidebar-handle"></div>
+            <div class="search-wrap">
+                <input type="text" id="searchInput" class="search-input" placeholder="업체명 또는 지역 검색 (예: 송파구)">
+            </div>
+
+            <div class="category-section">
+                <p class="section-label">카테고리</p>
+                <div class="category-list">
+                    <button class="cat-btn active"   data-category="all">전체 <span class="count" id="count-all"></span></button>
+                    <button class="cat-btn hardware" data-category="철물건재">철물/건재 <span class="count" id="count-철물건재"></span></button>
+                    <button class="cat-btn interior" data-category="인테리어철물">인테리어철물 <span class="count" id="count-인테리어철물"></span></button>
+                    <button class="cat-btn wood"     data-category="목자재">목자재 <span class="count" id="count-목자재"></span></button>
+                    <button class="cat-btn tile"     data-category="타일자재">타일자재 <span class="count" id="count-타일자재"></span></button>
+                    <button class="cat-btn electric" data-category="전기조명">전기/조명 <span class="count" id="count-전기조명"></span></button>
+                </div>
+            </div>
+
+            <div class="store-list" id="storeList"></div>
+        </aside>
+
+        <div class="map-wrap">
+            <div id="map"></div>
+        </div>
+
+    </div>
+
+    <!-- 모바일 FAB + 오버레이 -->
+    <button class="mobile-fab" onclick="toggleMobileList()">&#9776; 업체 목록</button>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileList()"></div>
+
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+            <span class="detail-category" id="detailCategory"></span>
+            <button class="detail-close" id="detailClose">✕</button>
+        </div>
+        <h2 class="detail-name" id="detailName"></h2>
+        <div class="detail-body" id="detailBody"></div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zcmxqf4ztx"></script>
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+    <script>
+    function toggleMobileList(){
+        var s=document.getElementById('mobileSidebar');
+        var o=document.getElementById('mobileOverlay');
+        if(s.classList.contains('mobile-open')){ closeMobileList(); }
+        else { s.classList.add('mobile-open'); o.classList.add('show'); }
+    }
+    function closeMobileList(){
+        document.getElementById('mobileSidebar').classList.remove('mobile-open');
+        document.getElementById('mobileOverlay').classList.remove('show');
+    }
+    </script>
+</body>
+</html>
