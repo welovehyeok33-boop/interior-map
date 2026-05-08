@@ -61,7 +61,7 @@ ADMIN_EMAILS = ['welovehyeok33@gmail.com']                 // 관리자 이메�
 ```sql
 id          bigint PK
 name        text          -- 업체명
-category    text          -- 철물건재 | 인테리어철물 | 목자재 | 타일자재 | 전기조명
+category    text          -- 철물건재 | 인테리어철물 | 목자재 | 전기조명
 address     text
 phone       text
 hours       text          -- 영업시간
@@ -260,7 +260,6 @@ const CAT_COLOR = {
     "철물건재":     "#708090",
     "인테리어철물": "#2E8B57",
     "목자재":       "#8B4513",
-    "타일자재":     "#4682B4",
     "전기조명":     "#DAA520",
 };
 ```

@@ -3,7 +3,6 @@ const CAT_COLOR = {
   "철물건재":     "#708090",
   "인테리어철물": "#2E8B57",
   "목자재":       "#8B4513",
-  "타일자재":     "#4682B4",
   "전기조명":     "#DAA520",
 };
 
@@ -11,7 +10,6 @@ const CAT_SHORT = {
   "철물건재":     "철",
   "인테리어철물": "인",
   "목자재":       "목",
-  "타일자재":     "타",
   "전기조명":     "전",
 };
 
@@ -152,7 +150,7 @@ function renderStoreList() {
 // ── 카테고리 카운트 표시 ──────────────────────────────────────
 function updateCounts() {
   document.getElementById("count-all").textContent = allStores.length;
-  ["철물건재", "인테리어철물", "목자재", "타일자재", "전기조명"].forEach(function (cat) {
+  ["철물건재", "인테리어철물", "목자재", "전기조명"].forEach(function (cat) {
     var el = document.getElementById("count-" + cat);
     if (el) el.textContent = allStores.filter(function (s) { return s.category === cat; }).length;
   });
